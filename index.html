@@ -655,28 +655,37 @@
     <script>
         // --- LOGIC ---
 
+     
         document.getElementById('datePicker').valueAsDate = new Date();
         let logoDataUrl = "";
         let selectedGST = 18;
 
         // ✅ YOUR LOGO URL - SET AS DEFAULT
-        const DEFAULT_LOGO_URL = "https://i.postimg.cc/6qrKXs2N/new-140-4-2026-10-31-16-PM.png";
+        const DEFAULT_LOGO_URL = "https://i.postimg.cc/3JNNHTRs/IMG_20251218_232251_870.jpg";
+        
+        // ✅ DEFAULT SHOP DETAILS
+        const DEFAULT_SHOP = {
+            name: "NEXGEN TRADERS",
+            address: "Plot No. 45, Industrial Area Phase-II\nChandigarh, India - 160002",
+            contact: "GSTIN: 04AABCN1234A1Z5 | Email: contact@nexgen.com"
+        };
 
-        // ✅ 1. LOAD LOGO ON PAGE LOAD (Priority: localStorage > Default URL)
+        // ✅ 1. LOAD ALL PERSISTENT DATA ON PAGE LOAD
         window.addEventListener('DOMContentLoaded', function() {
+            // Load Logo
             const savedLogo = localStorage.getItem('invoiceLogo');
-            
             if (savedLogo && savedLogo.startsWith('data:')) {
-                // Use saved base64 logo from localStorage
                 logoDataUrl = savedLogo;
                 showLogo(logoDataUrl);
             } else {
-                // Use default direct URL logo
                 logoDataUrl = DEFAULT_LOGO_URL;
                 showLogo(logoDataUrl);
             }
 
-            // Load saved GST preference
+            // Load Shop Details
+            loadShopDetails();
+
+            // Load GST preference
             const savedGST = localStorage.getItem('invoiceGST');
             if (savedGST) {
                 selectedGST = parseInt(savedGST);
@@ -684,7 +693,7 @@
             }
         });
 
-        // ✅ Show Logo Helper Function
+        // ✅ Show Logo Helper
         function showLogo(url) {
             const img = document.getElementById('logoPreview');
             const icon = document.getElementById('logoIcon');
@@ -693,7 +702,6 @@
             img.src = url;
             img.style.display = 'block';
             img.onerror = function() {
-                // Fallback if image fails to load
                 icon.style.display = 'block';
                 text.style.display = 'block';
                 img.style.display = 'none';
@@ -702,14 +710,30 @@
             text.style.display = 'none';
         }
 
-        // ✅ 2. LOGO UPLOAD & SAVE TO LOCALSTORAGE
+        // ✅ LOAD Shop Details from localStorage
+        function loadShopDetails() {
+            const savedName = localStorage.getItem('shopName');
+            const savedAddress = localStorage.getItem('shopAddress');
+            const savedContact = localStorage.getItem('shopContact');
+
+            document.getElementById('shopName').value = savedName || DEFAULT_SHOP.name;
+            document.getElementById('shopAddress').value = savedAddress || DEFAULT_SHOP.address;
+            document.getElementById('shopContact').value = savedContact || DEFAULT_SHOP.contact;
+        }
+
+        // ✅ SAVE Shop Details to localStorage (Auto-save on edit)
+        function saveShopDetails() {
+            localStorage.setItem('shopName', document.getElementById('shopName').value);
+            localStorage.setItem('shopAddress', document.getElementById('shopAddress').value);
+            localStorage.setItem('shopContact', document.getElementById('shopContact').value);
+        }
+
+        // ✅ LOGO UPLOAD & SAVE
         function loadLogo(event) {
             const file = event.target.files[0];
             if (file) {
-                // Check file size (max 500KB for localStorage)
                 if (file.size > 500 * 1024) {
-                    alert('Logo size should be less than 500KB for best performance!');
-                    // Still try to use the URL without saving
+                    alert('Logo size should be less than 500KB!');
                     const objectUrl = URL.createObjectURL(file);
                     showLogo(objectUrl);
                     return;
@@ -718,21 +742,18 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     logoDataUrl = e.target.result;
-                    
-                    // Save to localStorage
                     try {
                         localStorage.setItem('invoiceLogo', logoDataUrl);
                     } catch (err) {
-                        alert('Logo is too large! Using temporary preview only.');
+                        alert('Logo too large! Using temporary preview.');
                     }
-
                     showLogo(logoDataUrl);
                 };
                 reader.readAsDataURL(file);
             }
         }
 
-        // ✅ 3. REMOVE LOGO - Revert to Default URL
+        // ✅ REMOVE LOGO - Revert to Default
         function removeLogo() {
             if(confirm('Remove custom logo and revert to default?')) {
                 localStorage.removeItem('invoiceLogo');
@@ -742,11 +763,10 @@
             }
         }
 
-        // 4. GST Controller - Select GST Rate
+        // ✅ GST Controller
         function selectGST(rate) {
             selectedGST = rate;
             localStorage.setItem('invoiceGST', rate);
-            
             document.querySelectorAll('.gst-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (parseInt(btn.dataset.gst) === rate) {
@@ -755,7 +775,6 @@
             });
         }
 
-        // 5. GST Controller - Apply to All Rows
         function applyGSTToAll() {
             document.querySelectorAll('#tableBody tr').forEach(row => {
                 const gstInput = row.querySelector('.gst');
@@ -764,7 +783,7 @@
             });
         }
 
-        // 6. Table Row Management
+        // ✅ Table Row Management
         function addRow() {
             const tbody = document.getElementById('tableBody');
             const rowCount = tbody.rows.length + 1;
@@ -794,10 +813,9 @@
             calculateTotals();
         }
 
-        // 7. AUTO CALCULATE Row (Tax & Total)
+        // ✅ AUTO CALCULATE Row
         function calculateRow(input) {
             const row = input.closest('tr');
-            
             const qty = parseFloat(row.querySelector('.qty').value) || 0;
             const rate = parseFloat(row.querySelector('.rate').value) || 0;
             const gstPercent = parseFloat(row.querySelector('.gst').value) || 0;
@@ -808,11 +826,10 @@
 
             row.querySelector('.tax-amt').value = taxAmount.toFixed(2);
             row.querySelector('.total').value = rowTotal.toFixed(2);
-
             calculateTotals();
         }
 
-        // 8. AUTO CALCULATE Grand Totals
+        // ✅ AUTO CALCULATE Grand Totals
         function calculateTotals() {
             let taxableValue = 0;
             let totalGST = 0;
@@ -821,10 +838,8 @@
                 const qty = parseFloat(row.querySelector('.qty').value) || 0;
                 const rate = parseFloat(row.querySelector('.rate').value) || 0;
                 const gstPercent = parseFloat(row.querySelector('.gst').value) || 0;
-
                 const itemTaxable = qty * rate;
                 const itemGST = itemTaxable * (gstPercent / 100);
-
                 taxableValue += itemTaxable;
                 totalGST += itemGST;
             });
@@ -838,14 +853,12 @@
             document.getElementById('displayCgst').innerText = '₹' + cgst.toFixed(2);
             document.getElementById('displaySgst').innerText = '₹' + sgst.toFixed(2);
             document.getElementById('displayGrandTotal').innerText = '₹' + grandTotal.toFixed(2);
-            
             document.getElementById('amountInWords').innerText = numberToWords(Math.round(grandTotal));
         }
 
-        // 9. Number to Words (Indian System)
+        // ✅ Number to Words (Indian System)
         function numberToWords(num) {
             if (num === 0) return "Zero";
-            
             const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
             const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
             const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
@@ -860,66 +873,57 @@
 
             function convert(n) {
                 if (n === 0) return 'Zero';
-                
                 const crore = Math.floor(n / 10000000);
                 const lakh = Math.floor((n % 10000000) / 100000);
                 const thousand = Math.floor((n % 100000) / 1000);
                 const hundred = Math.floor((n % 1000) / 100);
                 const remainder = n % 100;
-
                 let result = '';
                 if (crore > 0) result += convertLessThanThousand(crore) + ' Crore ';
                 if (lakh > 0) result += convertLessThanThousand(lakh) + ' Lakh ';
                 if (thousand > 0) result += convertLessThanThousand(thousand) + ' Thousand ';
                 if (hundred > 0) result += convertLessThanThousand(hundred * 100) + ' ';
                 if (remainder > 0) result += convertLessThanThousand(remainder);
-
                 return result.trim();
             }
-
             return convert(num);
         }
 
-        // 10. Reset Form
+        // ✅ Reset Form (Clears invoice data BUT KEEPS shop details)
         function resetForm() {
-            if(confirm("Clear all data and start new invoice?")) {
+            if(confirm("Clear invoice data and start new invoice? (Shop details will be saved)")) {
                 document.getElementById('tableBody').innerHTML = '';
-                document.querySelectorAll('input').forEach(i => {
-                    if(i.type !== 'file' && i.type !== 'date') i.value = '';
-                });
+                document.querySelectorAll('#tableBody input').forEach(i => i.value = '');
                 document.getElementById('extraCharge').value = '0';
-                
-                // Revert to default logo
-                localStorage.removeItem('invoiceLogo');
-                logoDataUrl = DEFAULT_LOGO_URL;
-                showLogo(logoDataUrl);
-                document.getElementById('logoInput').value = '';
-                
                 selectedGST = 18;
                 selectGST(18);
                 addRow();
                 calculateTotals();
+                // Shop details are NOT cleared - they remain saved!
+            }
+        }
+
+        // ✅ Clear ALL Data (Including Shop Details)
+        function clearAllData() {
+            if(confirm("⚠️ Delete ALL saved data including Shop Name, Address, Logo? This cannot be undone!")) {
+                localStorage.clear();
+                location.reload();
             }
         }
 
         // Initialize
         addRow();
 
-        // 11. PDF Generation
+        // ✅ PDF Generation
         async function generatePDF() {
             const { jsPDF } = window.jspdf;
             const element = document.getElementById('invoice-content');
-            
             const controls = document.querySelectorAll('.no-print');
             controls.forEach(el => el.style.display = 'none');
-
             element.classList.add('pdf-ready');
 
             const canvas = await html2canvas(element, {
-                scale: 2, 
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                windowWidth: 900
+                scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 900
             });
 
             element.classList.remove('pdf-ready');
@@ -927,11 +931,9 @@
 
             const imgData = canvas.toDataURL('image/png');
             const doc = new jsPDF('p', 'mm', 'a4');
-            
             const pdfWidth = doc.internal.pageSize.getWidth();
             const imgProps = doc.getImageProperties(imgData);
             const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
             doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
             
             const invNo = document.querySelector('.meta-card input[type="text"]').value;
